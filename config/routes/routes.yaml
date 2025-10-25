@@ -1,0 +1,6 @@
+about:
+
+    path: /about
+
+    controller: App\Controller\DefaultController::about
+
