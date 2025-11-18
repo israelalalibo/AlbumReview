@@ -20,13 +20,6 @@ class Announcement
     #[ORM\Column]
     private ?\DateTime $timestamp = null;
 
-    #[ORM\Column(length: 200, nullable: false)]
-    private ?string $user = null;
-
-    #[ORM\Column(length: 255)]
-    private ?string $author = null;
-
-
     public function getId(): ?int
     {
         return $this->id;
@@ -52,18 +45,6 @@ class Announcement
     public function setTimestamp(\DateTime $timestamp): static
     {
         $this->timestamp = $timestamp;
-
-        return $this;
-    }
-
-    public function getAuthor(): ?string
-    {
-        return $this->author;
-    }
-
-    public function setAuthor(string $author): static
-    {
-        $this->author = $author;
 
         return $this;
     }

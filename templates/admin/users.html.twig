@@ -1,0 +1,56 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}User Management{% endblock %}
+
+{% block body %}
+    <h1 class="mb-4">User Management</h1>
+
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-dark">
+                <tr>
+                    <th>ID</th>
+                    <th>Username</th>
+                    <th>Email</th>
+                    <th>Roles</th>
+                    <th>Registered</th>
+                    <th>Actions</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for user in users %}
+                    <tr>
+                        <td>{{ user.id }}</td>
+                        <td>{{ user.username }}</td>
+                        <td>{{ user.email }}</td>
+                        <td>
+                            {% if 'ROLE_ADMIN' in user.roles %}
+                                <span class="badge bg-danger">Admin</span>
+                            {% elseif 'ROLE_MODERATOR' in user.roles %}
+                                <span class="badge bg-warning">Moderator</span>
+                            {% else %}
+                                <span class="badge bg-secondary">User</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ user.createdAt|date('Y-m-d') }}</td>
+                        <td>
+                            {% if user != app.user %}
+                                <form method="post" action="{{ path('admin_user_role', {id: user.id}) }}" class="d-inline">
+                                    <select name="role" class="form-select form-select-sm d-inline-block w-auto" onchange="this.form.submit()">
+                                        <option value="ROLE_USER" {{ 'ROLE_MODERATOR' not in user.roles and 'ROLE_ADMIN' not in user.roles ? 'selected' : '' }}>User</option>
+                                        <option value="ROLE_MODERATOR" {{ 'ROLE_MODERATOR' in user.roles and 'ROLE_ADMIN' not in user.roles ? 'selected' : '' }}>Moderator</option>
+                                        <option value="ROLE_ADMIN" {{ 'ROLE_ADMIN' in user.roles ? 'selected' : '' }}>Admin</option>
+                                    </select>
+                                </form>
+                            {% else %}
+                                <span class="text-muted">Current User</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}

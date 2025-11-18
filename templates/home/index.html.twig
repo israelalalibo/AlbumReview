@@ -1,0 +1,75 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Home - Album Review App{% endblock %}
+
+{% block body %}
+    <div class="jumbotron bg-light p-5 rounded-3 mb-5">
+        <h1 class="display-4">Welcome to Album Reviews</h1>
+        <p class="lead">Discover, review, and share your favorite music albums with the community.</p>
+        <hr class="my-4">
+        <p>Join thousands of music lovers in reviewing albums from all genres.</p>
+        {% if not app.user %}
+            <a class="btn btn-primary btn-lg" href="{{ path('app_register') }}" role="button">
+                Get Started
+            </a>
+            <a class="btn btn-outline-secondary btn-lg" href="{{ path('album_index') }}" role="button">
+                Browse Albums
+            </a>
+        {% endif %}
+    </div>
+
+    <h2 class="mb-4">Top Rated Albums</h2>
+    <div class="row row-cols-1 row-cols-md-3 g-4 mb-5">
+        {% for album in topRatedAlbums %}
+            <div class="col">
+                <div class="card h-100 shadow-sm">
+                    {% if album.coverImage %}
+                        <img src="{{ asset('uploads/albums/' ~ album.coverImage) }}" class="card-img-top" alt="{{ album.title }}" style="height: 250px; object-fit: cover;">
+                    {% else %}
+                        <div class="card-img-top bg-secondary d-flex align-items-center justify-content-center" style="height: 250px;">
+                            <i class="bi bi-disc display-1 text-white"></i>
+                        </div>
+                    {% endif %}
+                    <div class="card-body">
+                        <h5 class="card-title">{{ album.title }}</h5>
+                        <p class="card-text text-muted">{{ album.artist }}</p>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="badge bg-primary">{{ album.genre }}</span>
+                            <span class="text-warning">
+                            <i class="bi bi-star-fill"></i> {{ album.averageRating|number_format(1) }}
+                        </span>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-transparent">
+                        <a href="{{ path('album_show', {slug: album.slug}) }}" class="btn btn-sm btn-outline-primary w-100">
+                            View Album
+                        </a>
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <div class="col-12">
+                <p class="text-muted">No albums yet. Be the first to add one!</p>
+            </div>
+        {% endfor %}
+    </div>
+
+    <h2 class="mb-4">Latest Reviews</h2>
+    <div class="list-group mb-5">
+        {% for review in latestReviews %}
+            <a href="{{ path('album_show', {slug: review.album.slug}) }}" class="list-group-item list-group-item-action">
+                <div class="d-flex w-100 justify-content-between">
+                    <h5 class="mb-1">{{ review.album.title }} - {{ review.album.artist }}</h5>
+                    <small class="text-muted">{{ review.createdAt|date('M d, Y') }}</small>
+                </div>
+                <p class="mb-1">{{ review.content|length > 150 ? review.content|slice(0, 150) ~ '...' : review.content }}</p>
+                <small class="text-muted">
+                    By {{ review.user.username }} -
+                    <span class="text-warning"><i class="bi bi-star-fill"></i> {{ review.rating }}/10</span>
+                </small>
+            </a>
+        {% else %}
+            <p class="text-muted">No reviews yet.</p>
+        {% endfor %}
+    </div>
+{% endblock %}

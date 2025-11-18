@@ -1,0 +1,109 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Account Settings{% endblock %}
+
+{% block body %}
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card shadow">
+                    <div class="card-header bg-primary text-white">
+                        <h4 class="mb-0">
+                            <i class="bi bi-gear"></i> Account Settings
+                        </h4>
+                    </div>
+                    <div class="card-body">
+                        {# Account Information Section #}
+                        <div class="mb-5">
+                            <h5 class="mb-3">
+                                <i class="bi bi-person-badge"></i> Account Information
+                            </h5>
+                            <div class="alert alert-info">
+                                <strong>Username:</strong> {{ user.username }}<br>
+                                <strong>Email:</strong> {{ user.email }}<br>
+                                <strong>Account Created:</strong> {{ user.createdAt|date('F j, Y') }}
+                            </div>
+                        </div>
+
+                        {# Change Password Section #}
+                        <div class="mb-5">
+                            <h5 class="mb-3">
+                                <i class="bi bi-shield-lock"></i> Change Password
+                            </h5>
+
+                            {{ form_start(passwordForm) }}
+
+                            <div class="mb-3">
+                                {{ form_label(passwordForm.currentPassword, 'Current Password', {'label_attr': {'class': 'form-label'}}) }}
+                                {{ form_widget(passwordForm.currentPassword) }}
+                                {{ form_errors(passwordForm.currentPassword) }}
+                            </div>
+
+                            <div class="mb-3">
+                                {{ form_label(passwordForm.newPassword.first, null, {'label_attr': {'class': 'form-label'}}) }}
+                                {{ form_widget(passwordForm.newPassword.first) }}
+                                {{ form_errors(passwordForm.newPassword.first) }}
+                                <div class="form-text">Minimum 6 characters</div>
+                            </div>
+
+                            <div class="mb-3">
+                                {{ form_label(passwordForm.newPassword.second, null, {'label_attr': {'class': 'form-label'}}) }}
+                                {{ form_widget(passwordForm.newPassword.second) }}
+                                {{ form_errors(passwordForm.newPassword.second) }}
+                            </div>
+
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle"></i> Update Password
+                            </button>
+
+                            {{ form_end(passwordForm) }}
+                        </div>
+
+                        {# Privacy & Security #}
+                        <div class="mb-5">
+                            <h5 class="mb-3">
+                                <i class="bi bi-shield-check"></i> Privacy & Security
+                            </h5>
+                            <div class="list-group">
+                                <div class="list-group-item">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6 class="mb-1">Profile Visibility</h6>
+                                            <small class="text-muted">Your profile is visible to all users</small>
+                                        </div>
+                                        <span class="badge bg-success">Public</span>
+                                    </div>
+                                </div>
+                                <div class="list-group-item">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6 class="mb-1">Review History</h6>
+                                            <small class="text-muted">Your reviews are visible to everyone</small>
+                                        </div>
+                                        <span class="badge bg-success">Visible</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {# Account Actions #}
+                        <div class="mb-3">
+                            <h5 class="mb-3">
+                                <i class="bi bi-exclamation-triangle"></i> Account Actions
+                            </h5>
+                            <div class="alert alert-warning">
+                                <strong>Note:</strong> To delete your account or request data export, please contact an administrator.
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <a href="{{ path('profile_show') }}" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> Back to Profile
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
