@@ -85,6 +85,7 @@
                     {% endfor %}
 
                     {% if userReview is null %}
+                        {# To see if the user has written any review yet, if not allow to write review #}
                         <a href="{{ path('review_new', {slug: album.slug}) }}" class="btn btn-success">
                             <i class="bi bi-plus-circle"></i> Write Review
                         </a>

@@ -72,7 +72,7 @@ class AppFixtures extends Fixture
 
 
 
-        // Create Reviews
+        // Create sample built in Reviews
         $reviewTexts = [
             "This album is an absolute masterpiece. The production quality is exceptional and every track flows perfectly into the next. A timeless classic that deserves all the praise it gets.",
             "I've listened to this album countless times and it never gets old. The songwriting is brilliant and the performances are outstanding. Highly recommended for any music lover.",
@@ -81,6 +81,7 @@ class AppFixtures extends Fixture
             "Solid album with excellent musicianship throughout. Not every track is a hit, but the overall quality is very high. Definitely worth checking out.",
         ];
 
+        //sample review titles
         $reviewTitles = [
             "Absolutely Amazing",
             "A True Classic",

@@ -5,6 +5,7 @@ namespace App\Repository;
 use App\Entity\Announcement;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
+//This Repository was used for learning and revision purposes and should be ignored regarding this project
 
 /**
  * @extends ServiceEntityRepository<Announcement>

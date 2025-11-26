@@ -4,7 +4,7 @@ namespace App\Entity;
 
 use App\Repository\AnnouncementRepository;
 use Doctrine\ORM\Mapping as ORM;
-
+//This Entity was used for learning purposes during the workshop/lecture sessions
 #[ORM\Entity(repositoryClass: AnnouncementRepository::class)]
 #[ORM\Table(name: "announcements")]
 class Announcement

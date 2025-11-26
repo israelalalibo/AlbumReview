@@ -9,7 +9,7 @@ use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
-
+//This Form was used for learning and revision purposes during the lecture/workshop
 class AnnouncementType extends AbstractType
 {
     public function buildForm(FormBuilderInterface $builder, array $options): void
