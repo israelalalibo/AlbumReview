@@ -7,7 +7,41 @@
         <div class="col-md-8">
             <h1 class="mb-4">Add New Album</h1>
 
-            {{ form_start(form, {'attr': {'enctype': 'multipart/form-data'}}) }}
+            {# MusicBrainz Lookup Section #}
+            <div class="card mb-4 border-info">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="bi bi-search"></i> Auto-Fill from MusicBrainz</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-3">Search the MusicBrainz database to automatically fill in album details.</p>
+                    <div class="row g-2">
+                        <div class="col-md-5">
+                            <input type="text" id="mb-artist" class="form-control" placeholder="Artist name...">
+                        </div>
+                        <div class="col-md-5">
+                            <input type="text" id="mb-title" class="form-control" placeholder="Album title (optional)...">
+                        </div>
+                        <div class="col-md-2">
+                            <button type="button" id="mb-search-btn" class="btn btn-info w-100">
+                                <i class="bi bi-search"></i> Search
+                            </button>
+                        </div>
+                    </div>
+                    <div id="mb-results" class="mt-3" style="display: none;">
+                        <h6>Search Results:</h6>
+                        <div id="mb-results-list" class="list-group"></div>
+                    </div>
+                    <div id="mb-loading" class="mt-3 text-center" style="display: none;">
+                        <div class="spinner-border text-info" role="status">
+                            <span class="visually-hidden">Searching...</span>
+                        </div>
+                        <p class="mt-2">Searching MusicBrainz...</p>
+                    </div>
+                    <div id="mb-error" class="alert alert-warning mt-3" style="display: none;"></div>
+                </div>
+            </div>
+
+            {{ form_start(form, {'attr': {'enctype': 'multipart/form-data', 'id': 'album-form'}}) }}
             <div class="card mb-3">
                 <div class="card-body">
                     <h5 class="card-title">Album Information</h5>
@@ -47,7 +81,7 @@
 
                     <div class="mb-3">
                         {{ form_label(form.trackList, null, {'label_attr': {'class': 'form-label'}}) }}
-                        {{ form_widget(form.trackList, {'attr': {'class': 'form-control', 'placeholder': '1. Track One\n2. Track Two\n3. Track Three'}}) }}
+                        {{ form_widget(form.trackList, {'attr': {'class': 'form-control', 'placeholder': '1. Track One\n2. Track Two\n3. Track Three', 'rows': '8'}}) }}
                         {{ form_errors(form.trackList) }}
                     </div>
                 </div>
@@ -62,4 +96,143 @@
             {{ form_end(form) }}
         </div>
     </div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchBtn = document.getElementById('mb-search-btn');
+            const artistInput = document.getElementById('mb-artist');
+            const titleInput = document.getElementById('mb-title');
+            const resultsDiv = document.getElementById('mb-results');
+            const resultsList = document.getElementById('mb-results-list');
+            const loadingDiv = document.getElementById('mb-loading');
+            const errorDiv = document.getElementById('mb-error');
+
+            searchBtn.addEventListener('click', function() {
+                const artist = artistInput.value.trim();
+                const title = titleInput.value.trim();
+
+                if (!artist) {
+                    errorDiv.textContent = 'Please enter an artist name.';
+                    errorDiv.style.display = 'block';
+                    resultsDiv.style.display = 'none';
+                    return;
+                }
+
+                errorDiv.style.display = 'none';
+                resultsDiv.style.display = 'none';
+                loadingDiv.style.display = 'block';
+
+                let url = '/album/lookup?artist=' + encodeURIComponent(artist);
+                if (title) {
+                    url += '&title=' + encodeURIComponent(title);
+                }
+
+                fetch(url)
+                    .then(response => response.json())
+                    .then(data => {
+                        loadingDiv.style.display = 'none';
+                        
+                        if (data.error) {
+                            errorDiv.textContent = data.error;
+                            errorDiv.style.display = 'block';
+                            return;
+                        }
+
+                        if (!data || data.length === 0) {
+                            errorDiv.textContent = 'No albums found. Try a different search.';
+                            errorDiv.style.display = 'block';
+                            return;
+                        }
+
+                        resultsList.innerHTML = '';
+                        data.slice(0, 8).forEach(function(album) {
+                            const item = document.createElement('a');
+                            item.href = '#';
+                            item.className = 'list-group-item list-group-item-action';
+                            item.innerHTML = `
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong>${album.title || 'Unknown Title'}</strong>
+                                        <br><small class="text-muted">${album.artist || 'Unknown Artist'}</small>
+                                    </div>
+                                    <div class="text-end">
+                                        ${album.releaseDate ? '<span class="badge bg-secondary">' + album.releaseDate.substring(0, 4) + '</span>' : ''}
+                                        ${album.country ? '<span class="badge bg-light text-dark">' + album.country + '</span>' : ''}
+                                    </div>
+                                </div>
+                            `;
+                            item.addEventListener('click', function(e) {
+                                e.preventDefault();
+                                selectAlbum(album);
+                            });
+                            resultsList.appendChild(item);
+                        });
+
+                        resultsDiv.style.display = 'block';
+                    })
+                    .catch(error => {
+                        loadingDiv.style.display = 'none';
+                        errorDiv.textContent = 'Error searching MusicBrainz. Please try again.';
+                        errorDiv.style.display = 'block';
+                    });
+            });
+
+            function selectAlbum(album) {
+                // Symfony form fields use the pattern: formname_fieldname
+                // For AlbumType, the form name is 'album', so IDs are album_title, album_artist, etc.
+                const titleField = document.getElementById('album_title');
+                const artistField = document.getElementById('album_artist');
+                const yearField = document.getElementById('album_releaseYear');
+                const trackListField = document.getElementById('album_trackList');
+
+                if (titleField) titleField.value = album.title || '';
+                if (artistField) artistField.value = album.artist || '';
+                
+                if (album.releaseDate && yearField) {
+                    const year = album.releaseDate.substring(0, 4);
+                    yearField.value = year;
+                }
+
+                if (album.mbid && trackListField) {
+                    fetch('/album/details/' + album.mbid)
+                        .then(response => response.json())
+                        .then(details => {
+                            if (details.trackList && details.trackList.length > 0) {
+                                const tracks = details.trackList.map(function(track, index) {
+                                    return (index + 1) + '. ' + track.title;
+                                }).join('\n');
+                                trackListField.value = tracks;
+                            }
+                        })
+                        .catch(err => console.log('Could not fetch track details'));
+                }
+
+                resultsDiv.style.display = 'none';
+                
+                const successAlert = document.createElement('div');
+                successAlert.className = 'alert alert-success alert-dismissible fade show mt-3';
+                successAlert.innerHTML = `
+                    <i class="bi bi-check-circle"></i> Album details loaded from MusicBrainz!
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                `;
+                document.querySelector('.card.border-info .card-body').appendChild(successAlert);
+            }
+
+            artistInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    searchBtn.click();
+                }
+            });
+            titleInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    searchBtn.click();
+                }
+            });
+        });
+    </script>
 {% endblock %}

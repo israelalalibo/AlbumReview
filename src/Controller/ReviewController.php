@@ -103,6 +103,7 @@ class ReviewController extends AbstractController
             throw $this->createAccessDeniedException();
         }
 
+        //Need to make sure to avoid cross site Request forgery before deleting
         if ($this->isCsrfTokenValid('delete'.$review->getId(), $request->request->get('_token'))) {
             $entityManager->remove($review);
             $entityManager->flush();

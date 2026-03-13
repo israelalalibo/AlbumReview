@@ -12,6 +12,12 @@ security:
         dev:
             pattern: ^/(_(profiler|wdt)|css|images|js)/
             security: false
+        api:
+            pattern: ^/api/
+            stateless: true
+            provider: app_user_provider
+            access_token:
+                token_handler: App\Security\ApiTokenHandler
         main:
             lazy: true
             provider: app_user_provider
@@ -36,6 +42,12 @@ security:
     # control access for large sections
     # Note from lecture: Only the *first* access control that matches will be used
     access_control:
+        # API routes - allow public access for login and GET requests
+        - { path: ^/api/v1/auth/login, roles: PUBLIC_ACCESS }
+        - { path: ^/api/v1/albums, methods: [GET], roles: PUBLIC_ACCESS }
+        - { path: ^/api/v1/albums/\d+$, methods: [GET], roles: PUBLIC_ACCESS }
+        - { path: ^/api/v1/albums/\d+/reviews, methods: [GET], roles: PUBLIC_ACCESS }
+        # Web routes
         - { path: ^/login, roles: PUBLIC_ACCESS }
         - { path: ^/register, roles: PUBLIC_ACCESS }
         - { path: ^/admin, roles: ROLE_ADMIN }

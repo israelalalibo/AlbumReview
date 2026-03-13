@@ -1,0 +1,122 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Buy {{ album.title }} by {{ album.artist }}{% endblock %}
+
+{% block body %}
+<div class="container py-4">
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ path('album_index') }}">Albums</a></li>
+            <li class="breadcrumb-item"><a href="{{ path('album_show', {'slug': album.slug}) }}">{{ album.title }}</a></li>
+            <li class="breadcrumb-item active">Buy</li>
+        </ol>
+    </nav>
+
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card mb-4">
+                {% if album.coverImage %}
+                    <img src="{{ asset('uploads/albums/' ~ album.coverImage) }}" class="card-img-top" alt="{{ album.title }}">
+                {% else %}
+                    <div class="card-img-top bg-secondary text-white d-flex align-items-center justify-content-center" style="height: 300px;">
+                        <i class="bi bi-disc" style="font-size: 5rem;"></i>
+                    </div>
+                {% endif %}
+                <div class="card-body">
+                    <h4 class="card-title">{{ album.title }}</h4>
+                    <p class="card-text text-muted">{{ album.artist }}</p>
+                    <p class="card-text">
+                        <span class="badge bg-primary">{{ album.genre }}</span>
+                        {% if album.releaseYear %}
+                            <span class="badge bg-secondary">{{ album.releaseYear }}</span>
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-8">
+            <h2><i class="bi bi-cart"></i> Where to Buy</h2>
+
+            {% if purchaseInfo %}
+                {% if purchaseInfo.lowestPrice is defined and purchaseInfo.lowestPrice %}
+                    <div class="alert alert-success">
+                        <h5><i class="bi bi-tag"></i> Lowest Price Found</h5>
+                        <p class="display-6 mb-0">${{ purchaseInfo.lowestPrice|number_format(2) }}</p>
+                        <small class="text-muted">{{ purchaseInfo.numForSale|default(0) }} copies available on Discogs</small>
+                    </div>
+                {% endif %}
+
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-vinyl"></i> Discogs Marketplace</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if purchaseInfo.community is defined %}
+                            <div class="row mb-3">
+                                <div class="col-4 text-center">
+                                    <div class="h4">{{ purchaseInfo.community.have|default(0) }}</div>
+                                    <small class="text-muted">Collectors Have</small>
+                                </div>
+                                <div class="col-4 text-center">
+                                    <div class="h4">{{ purchaseInfo.community.want|default(0) }}</div>
+                                    <small class="text-muted">Collectors Want</small>
+                                </div>
+                                <div class="col-4 text-center">
+                                    <div class="h4">
+                                        {% if purchaseInfo.community.rating is defined and purchaseInfo.community.rating > 0 %}
+                                            {{ purchaseInfo.community.rating|number_format(1) }}/5
+                                        {% else %}
+                                            N/A
+                                        {% endif %}
+                                    </div>
+                                    <small class="text-muted">Rating</small>
+                                </div>
+                            </div>
+                        {% endif %}
+
+                        {% if purchaseInfo.formats is defined and purchaseInfo.formats %}
+                            <p>
+                                <strong>Available Formats:</strong>
+                                {% for format in purchaseInfo.formats %}
+                                    <span class="badge bg-info">{{ format.name }}</span>
+                                {% endfor %}
+                            </p>
+                        {% endif %}
+
+                        <a href="{{ purchaseInfo.marketplaceUrl|default('#') }}" target="_blank" class="btn btn-primary btn-lg">
+                            <i class="bi bi-cart-plus"></i> View on Discogs Marketplace
+                        </a>
+                    </div>
+                </div>
+            {% else %}
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle"></i> No marketplace information found for this album.
+                </div>
+            {% endif %}
+
+            <h4 class="mt-4">Other Purchase Options</h4>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <a href="https://www.amazon.com/s?k={{ (album.artist ~ ' ' ~ album.title ~ ' vinyl')|url_encode }}" 
+                       target="_blank" class="btn btn-outline-warning btn-lg w-100">
+                        <i class="bi bi-amazon"></i> Search on Amazon
+                    </a>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <a href="https://www.ebay.com/sch/i.html?_nkw={{ (album.artist ~ ' ' ~ album.title ~ ' vinyl')|url_encode }}" 
+                       target="_blank" class="btn btn-outline-primary btn-lg w-100">
+                        <i class="bi bi-shop"></i> Search on eBay
+                    </a>
+                </div>
+            </div>
+
+            <div class="mt-4">
+                <a href="{{ path('record_stores') }}" class="btn btn-success">
+                    <i class="bi bi-geo-alt"></i> Find Record Stores Near You
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -20,3 +20,12 @@ services:
             - '../src/DependencyInjection/'
             - '../src/Entity/'
             - '../src/Kernel.php'
+
+    App\Service\JwtService:
+        arguments:
+            $secretKey: '%env(APP_SECRET)%'
+            $issuer: 'albumreviews-api'
+
+    App\Security\ApiTokenHandler:
+        arguments:
+            $jwtService: '@App\Service\JwtService'
