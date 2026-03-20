@@ -13,12 +13,14 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
+use OpenApi\Attributes as OA;
 
 /**
  * RESTful API Controller for Review resources.
  * Reviews are sub-resources of Albums, following RESTful best practices.
  */
 #[Route('/api/v1')]
+#[OA\Tag(name: 'Reviews', description: 'Review operations (sub-resource of Albums)')]
 class ReviewApiController extends AbstractController
 {
     /**
@@ -28,19 +30,19 @@ class ReviewApiController extends AbstractController
     public function list(int $albumId, AlbumRepository $albumRepository): JsonResponse
     {
         $album = $albumRepository->find($albumId);
-        
+
         if (!$album) {
             return new JsonResponse(
                 ['error' => 'Album not found', 'code' => 'ALBUM_NOT_FOUND'],
                 Response::HTTP_NOT_FOUND
             );
         }
-        
+
         $reviews = array_map(
             fn($review) => $this->serializeReview($review),
             $album->getReviews()->toArray()
         );
-        
+
         return new JsonResponse([
             'reviews' => $reviews,
             'meta' => [
@@ -58,23 +60,23 @@ class ReviewApiController extends AbstractController
     public function show(int $albumId, int $id, AlbumRepository $albumRepository, ReviewRepository $reviewRepository): JsonResponse
     {
         $album = $albumRepository->find($albumId);
-        
+
         if (!$album) {
             return new JsonResponse(
                 ['error' => 'Album not found', 'code' => 'ALBUM_NOT_FOUND'],
                 Response::HTTP_NOT_FOUND
             );
         }
-        
+
         $review = $reviewRepository->find($id);
-        
+
         if (!$review || $review->getAlbum()?->getId() !== $albumId) {
             return new JsonResponse(
                 ['error' => 'Review not found', 'code' => 'REVIEW_NOT_FOUND'],
                 Response::HTTP_NOT_FOUND
             );
         }
-        
+
         return new JsonResponse(
             $this->serializeReview($review, true),
             Response::HTTP_OK
@@ -85,6 +87,12 @@ class ReviewApiController extends AbstractController
      * POST /api/v1/albums/{albumId}/reviews - Create a new review
      * Requires authentication.
      * 
+     * This endpoint is idempotent: each user can only have one review per album.
+     * If a review already exists, the existing review is returned with 200 OK.
+     * 
+     * Optional header for client-side idempotency:
+     *   Idempotency-Key: <unique-key>
+     *
      * Request body (JSON):
      * {
      *   "title": "Great Album!",
@@ -93,8 +101,13 @@ class ReviewApiController extends AbstractController
      * }
      */
     #[Route('/albums/{albumId}/reviews', name: 'api_reviews_create', requirements: ['albumId' => '\d+'], methods: ['POST'])]
-    public function create(int $albumId, Request $request, AlbumRepository $albumRepository, EntityManagerInterface $em): JsonResponse
-    {
+    public function create(
+        int $albumId, 
+        Request $request, 
+        AlbumRepository $albumRepository, 
+        ReviewRepository $reviewRepository,
+        EntityManagerInterface $em
+    ): JsonResponse {
         // Check authentication
         if (!$this->getUser()) {
             return new JsonResponse(
@@ -102,32 +115,52 @@ class ReviewApiController extends AbstractController
                 Response::HTTP_UNAUTHORIZED
             );
         }
-        
+
         $album = $albumRepository->find($albumId);
-        
         if (!$album) {
             return new JsonResponse(
                 ['error' => 'Album not found', 'code' => 'ALBUM_NOT_FOUND'],
                 Response::HTTP_NOT_FOUND
             );
         }
-        
+
+        // Idempotency check: User can only have one review per album
+        // If review exists, return the existing review (idempotent behavior)
+        $existingReview = $reviewRepository->findUserReviewForAlbum($this->getUser(), $album);
+        if ($existingReview) {
+            $location = $this->generateUrl(
+                'api_reviews_show',
+                ['albumId' => $albumId, 'id' => $existingReview->getId()],
+                UrlGeneratorInterface::ABSOLUTE_URL
+            );
+            
+            return new JsonResponse(
+                [
+                    'message' => 'Review already exists for this album',
+                    'code' => 'REVIEW_EXISTS',
+                    'review' => $this->serializeReview($existingReview),
+                ],
+                Response::HTTP_OK,
+                ['Location' => $location]
+            );
+        }
+
         // Parse JSON body
         $content = $request->getContent();
         $data = json_decode($content, true);
-        
+
         if (json_last_error() !== JSON_ERROR_NONE) {
             return new JsonResponse(
                 ['error' => 'Invalid JSON', 'detail' => json_last_error_msg()],
                 Response::HTTP_BAD_REQUEST
             );
         }
-        
+
         // Validate using form
         $review = new Review();
         $form = $this->createForm(ReviewApiType::class, $review);
         $form->submit($data);
-        
+
         if (!$form->isValid()) {
             $errors = $this->getFormErrors($form);
             return new JsonResponse(
@@ -135,21 +168,21 @@ class ReviewApiController extends AbstractController
                 Response::HTTP_BAD_REQUEST
             );
         }
-        
+
         // Set relationships
         $review->setAlbum($album);
         $review->setUser($this->getUser());
-        
+
         $em->persist($review);
         $em->flush();
-        
+
         // Return 201 Created with Location header
         $location = $this->generateUrl(
             'api_reviews_show',
             ['albumId' => $albumId, 'id' => $review->getId()],
             UrlGeneratorInterface::ABSOLUTE_URL
         );
-        
+
         return new JsonResponse(
             $this->serializeReview($review),
             Response::HTTP_CREATED,
@@ -171,25 +204,25 @@ class ReviewApiController extends AbstractController
                 Response::HTTP_UNAUTHORIZED
             );
         }
-        
+
         $album = $albumRepository->find($albumId);
-        
+
         if (!$album) {
             return new JsonResponse(
                 ['error' => 'Album not found', 'code' => 'ALBUM_NOT_FOUND'],
                 Response::HTTP_NOT_FOUND
             );
         }
-        
+
         $review = $reviewRepository->find($id);
-        
+
         if (!$review || $review->getAlbum()?->getId() !== $albumId) {
             return new JsonResponse(
                 ['error' => 'Review not found', 'code' => 'REVIEW_NOT_FOUND'],
                 Response::HTTP_NOT_FOUND
             );
         }
-        
+
         // Check ownership or admin
         if ($review->getUser() !== $this->getUser() && !$this->isGranted('ROLE_ADMIN')) {
             return new JsonResponse(
@@ -197,22 +230,22 @@ class ReviewApiController extends AbstractController
                 Response::HTTP_FORBIDDEN
             );
         }
-        
+
         // Parse JSON body
         $content = $request->getContent();
         $data = json_decode($content, true);
-        
+
         if (json_last_error() !== JSON_ERROR_NONE) {
             return new JsonResponse(
                 ['error' => 'Invalid JSON', 'detail' => json_last_error_msg()],
                 Response::HTTP_BAD_REQUEST
             );
         }
-        
+
         // Validate using form (clearMissing: false allows partial updates)
         $form = $this->createForm(ReviewApiType::class, $review);
         $form->submit($data, false);
-        
+
         if (!$form->isValid()) {
             $errors = $this->getFormErrors($form);
             return new JsonResponse(
@@ -220,10 +253,10 @@ class ReviewApiController extends AbstractController
                 Response::HTTP_BAD_REQUEST
             );
         }
-        
+
         $review->setUpdatedAt(new \DateTimeImmutable());
         $em->flush();
-        
+
         return new JsonResponse(
             $this->serializeReview($review),
             Response::HTTP_OK
@@ -244,25 +277,25 @@ class ReviewApiController extends AbstractController
                 Response::HTTP_UNAUTHORIZED
             );
         }
-        
+
         $album = $albumRepository->find($albumId);
-        
+
         if (!$album) {
             return new JsonResponse(
                 ['error' => 'Album not found', 'code' => 'ALBUM_NOT_FOUND'],
                 Response::HTTP_NOT_FOUND
             );
         }
-        
+
         $review = $reviewRepository->find($id);
-        
+
         if (!$review || $review->getAlbum()?->getId() !== $albumId) {
             return new JsonResponse(
                 ['error' => 'Review not found', 'code' => 'REVIEW_NOT_FOUND'],
                 Response::HTTP_NOT_FOUND
             );
         }
-        
+
         // Check ownership or admin
         if ($review->getUser() !== $this->getUser() && !$this->isGranted('ROLE_ADMIN')) {
             return new JsonResponse(
@@ -270,10 +303,10 @@ class ReviewApiController extends AbstractController
                 Response::HTTP_FORBIDDEN
             );
         }
-        
+
         $em->remove($review);
         $em->flush();
-        
+
         return new JsonResponse(null, Response::HTTP_NO_CONTENT);
     }
 
@@ -306,7 +339,7 @@ class ReviewApiController extends AbstractController
                 ),
             ],
         ];
-        
+
         if ($includeAlbum) {
             $album = $review->getAlbum();
             $data['album'] = [
@@ -316,7 +349,7 @@ class ReviewApiController extends AbstractController
                 'slug' => $album?->getSlug(),
             ];
         }
-        
+
         return $data;
     }
 

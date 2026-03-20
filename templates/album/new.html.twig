@@ -148,8 +148,8 @@
                         }
 
                         resultsList.innerHTML = '';
-                        data.slice(0, 8).forEach(function(album) {
-                            const item = document.createElement('a');
+                        data.slice(0, 8).forEach(function(album) { //Get 8 albums from the search results
+                            const item = document.createElement('a'); //Create a link for each album
                             item.href = '#';
                             item.className = 'list-group-item list-group-item-action';
                             item.innerHTML = `
@@ -164,11 +164,11 @@
                                     </div>
                                 </div>
                             `;
-                            item.addEventListener('click', function(e) {
-                                e.preventDefault();
-                                selectAlbum(album);
+                            item.addEventListener('click', function(e) { //When the link is clicked, select the album
+                                e.preventDefault(); 
+                                selectAlbum(album); 
                             });
-                            resultsList.appendChild(item);
+                            resultsList.appendChild(item); //
                         });
 
                         resultsDiv.style.display = 'block';
@@ -180,6 +180,9 @@
                     });
             });
 
+            /**
+             * Select the album and populate the form fields
+             * **/
             function selectAlbum(album) {
                 // Symfony form fields use the pattern: formname_fieldname
                 // For AlbumType, the form name is 'album', so IDs are album_title, album_artist, etc.
@@ -188,7 +191,7 @@
                 const yearField = document.getElementById('album_releaseYear');
                 const trackListField = document.getElementById('album_trackList');
 
-                if (titleField) titleField.value = album.title || '';
+                if (titleField) titleField.value = album.title || ''; 
                 if (artistField) artistField.value = album.artist || '';
                 
                 if (album.releaseDate && yearField) {

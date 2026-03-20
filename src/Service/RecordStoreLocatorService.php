@@ -97,7 +97,7 @@ class RecordStoreLocatorService
                 '[out:json][timeout:25];
                 (
                   node["shop"="music"](around:%d,%f,%f);
-                  way["shop"="music"](around:%d,%f,%f);
+                  way["shop"="music"](around:%d,%f,%f); 
                   node["shop"="records"](around:%d,%f,%f);
                   way["shop"="records"](around:%d,%f,%f);
                   node["shop"="hifi"](around:%d,%f,%f);

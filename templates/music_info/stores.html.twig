@@ -2,6 +2,18 @@
 
 {% block title %}Find Record Stores{% endblock %}
 
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <style>
+        #store-map { height: 450px; border-radius: 8px; }
+        .store-popup { min-width: 200px; }
+        .store-popup h6 { margin-bottom: 8px; color: #0d6efd; }
+        .store-popup .badge { font-size: 0.7rem; }
+        .store-card.highlighted { border: 2px solid #0d6efd; box-shadow: 0 0 10px rgba(13, 110, 253, 0.3); }
+    </style>
+{% endblock %}
+
 {% block body %}
 <div class="container py-4">
     <div class="hero-section mb-4">
@@ -40,7 +52,7 @@
                 <div class="row">
                     {% for store in stores %}
                         <div class="col-md-6 mb-4">
-                            <div class="card h-100">
+                            <div class="card h-100 store-card" data-store-id="{{ store.id }}" data-lat="{{ store.coordinates.lat }}" data-lon="{{ store.coordinates.lon }}">
                                 <div class="card-body">
                                     <h5 class="card-title">
                                         <i class="bi bi-shop text-primary"></i> {{ store.name }}
@@ -93,19 +105,10 @@
                 {% if locationInfo %}
                     <div class="card mt-4">
                         <div class="card-header">
-                            <h5 class="mb-0"><i class="bi bi-map"></i> Map View</h5>
+                            <h5 class="mb-0"><i class="bi bi-map"></i> Interactive Map</h5>
                         </div>
                         <div class="card-body p-0">
-                            <iframe 
-                                width="100%" 
-                                height="400" 
-                                frameborder="0" 
-                                scrolling="no" 
-                                marginheight="0" 
-                                marginwidth="0" 
-                                src="https://www.openstreetmap.org/export/embed.html?bbox={{ locationInfo.lon - 0.1 }}%2C{{ locationInfo.lat - 0.1 }}%2C{{ locationInfo.lon + 0.1 }}%2C{{ locationInfo.lat + 0.1 }}&layer=mapnik&marker={{ locationInfo.lat }}%2C{{ locationInfo.lon }}"
-                                style="border: 1px solid black">
-                            </iframe>
+                            <div id="store-map"></div>
                         </div>
                     </div>
                 {% endif %}
@@ -145,4 +148,131 @@
         </a>
     </div>
 </div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    {% if locationInfo and stores|length > 0 %}
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize map centered on search location
+            const map = L.map('store-map').setView([{{ locationInfo.lat }}, {{ locationInfo.lon }}], 13);
+            
+            // Add OpenStreetMap tiles
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+
+            // Custom icons
+            const userIcon = L.divIcon({
+                html: '<i class="bi bi-geo-alt-fill text-danger" style="font-size: 2rem;"></i>',
+                iconSize: [30, 30],
+                iconAnchor: [15, 30],
+                className: 'user-marker'
+            });
+
+            const storeIcon = L.divIcon({
+                html: '<i class="bi bi-shop-window text-primary" style="font-size: 1.5rem;"></i>',
+                iconSize: [24, 24],
+                iconAnchor: [12, 24],
+                popupAnchor: [0, -24],
+                className: 'store-marker'
+            });
+
+            // Add user location marker
+            L.marker([{{ locationInfo.lat }}, {{ locationInfo.lon }}], {icon: userIcon})
+                .addTo(map)
+                .bindPopup('<strong>Your Search Location</strong><br>{{ locationInfo.displayName|slice(0, 50) }}...');
+
+            // Store markers object for reference
+            const markers = {};
+            const bounds = L.latLngBounds([[{{ locationInfo.lat }}, {{ locationInfo.lon }}]]);
+
+            // Add store markers
+            const stores = [
+                {% for store in stores %}
+                {
+                    id: {{ store.id }},
+                    name: "{{ store.name|e('js') }}",
+                    lat: {{ store.coordinates.lat }},
+                    lon: {{ store.coordinates.lon }},
+                    type: "{{ store.type }}",
+                    distance: "{{ store.distance.km }} km",
+                    address: "{{ store.address|default('Address not available')|e('js') }}",
+                    phone: "{{ store.contact.phone|default('')|e('js') }}",
+                    website: "{{ store.contact.website|default('')|e('js') }}",
+                    hours: "{{ store.openingHours|default('')|e('js') }}",
+                    mapsUrl: "{{ store.mapsUrl }}"
+                }{% if not loop.last %},{% endif %}
+                {% endfor %}
+            ];
+
+            stores.forEach(function(store) {
+                // Create popup content
+                let popupContent = `
+                    <div class="store-popup">
+                        <h6><i class="bi bi-shop"></i> ${store.name}</h6>
+                        <p class="mb-1">
+                            <span class="badge bg-success">${store.distance}</span>
+                            <span class="badge bg-secondary">${store.type}</span>
+                        </p>
+                        ${store.address ? `<p class="mb-1 small"><i class="bi bi-pin-map"></i> ${store.address}</p>` : ''}
+                        ${store.phone ? `<p class="mb-1 small"><i class="bi bi-telephone"></i> <a href="tel:${store.phone}">${store.phone}</a></p>` : ''}
+                        ${store.hours ? `<p class="mb-1 small"><i class="bi bi-clock"></i> ${store.hours}</p>` : ''}
+                        <div class="mt-2">
+                            <a href="${store.mapsUrl}" target="_blank" class="btn btn-sm btn-primary">
+                                <i class="bi bi-map"></i> Directions
+                            </a>
+                            ${store.website ? `<a href="${store.website}" target="_blank" class="btn btn-sm btn-outline-secondary"><i class="bi bi-globe"></i></a>` : ''}
+                        </div>
+                    </div>
+                `;
+
+                const marker = L.marker([store.lat, store.lon], {icon: storeIcon})
+                    .addTo(map)
+                    .bindPopup(popupContent);
+
+                markers[store.id] = marker;
+                bounds.extend([store.lat, store.lon]);
+
+                // Highlight card on marker hover
+                marker.on('mouseover', function() {
+                    this.openPopup();
+                    const card = document.querySelector(`[data-store-id="${store.id}"]`);
+                    if (card) card.classList.add('highlighted');
+                });
+
+                marker.on('mouseout', function() {
+                    const card = document.querySelector(`[data-store-id="${store.id}"]`);
+                    if (card) card.classList.remove('highlighted');
+                });
+            });
+
+            // Fit map to show all markers
+            map.fitBounds(bounds, { padding: [30, 30] });
+
+            // Highlight marker when hovering over store card
+            document.querySelectorAll('.store-card').forEach(function(card) {
+                card.addEventListener('mouseenter', function() {
+                    const storeId = this.dataset.storeId;
+                    if (markers[storeId]) {
+                        markers[storeId].openPopup();
+                    }
+                });
+
+                card.addEventListener('click', function() {
+                    const lat = parseFloat(this.dataset.lat);
+                    const lon = parseFloat(this.dataset.lon);
+                    const storeId = this.dataset.storeId;
+                    map.setView([lat, lon], 16);
+                    if (markers[storeId]) {
+                        markers[storeId].openPopup();
+                    }
+                });
+            });
+        });
+    </script>
+    {% endif %}
 {% endblock %}

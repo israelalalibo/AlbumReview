@@ -12,24 +12,22 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
+use OpenApi\Attributes as OA;
 
 /**
  * RESTful API Controller for Album resources.
  * Provides CRUD operations for albums with JSON request/response.
  */
 #[Route('/api/v1')]
+#[OA\Tag(name: 'Albums', description: 'Album CRUD operations')]
 class AlbumApiController extends AbstractController
 {
-    /**
-     * GET /api/v1/albums - List all albums
-     * 
-     * Supports optional query parameters:
-     * - genre: Filter by genre
-     * - artist: Filter by artist (partial match)
-     * - limit: Maximum number of results (default 50)
-     * - offset: Pagination offset (default 0)
-     */
     #[Route('/albums', name: 'api_albums_list', methods: ['GET'])]
+    #[OA\Get(summary: 'List all albums', description: 'Retrieve a paginated list of albums with optional filtering.')]
+    #[OA\Parameter(name: 'genre', in: 'query', description: 'Filter by genre', required: false, schema: new OA\Schema(type: 'string'))]
+    #[OA\Parameter(name: 'limit', in: 'query', description: 'Max results (default 50, max 100)', required: false, schema: new OA\Schema(type: 'integer'))]
+    #[OA\Parameter(name: 'offset', in: 'query', description: 'Pagination offset', required: false, schema: new OA\Schema(type: 'integer'))]
+    #[OA\Response(response: 200, description: 'List of albums')]
     public function list(Request $request, AlbumRepository $repository): JsonResponse
     {
         $criteria = [];
@@ -83,6 +81,9 @@ class AlbumApiController extends AbstractController
      * POST /api/v1/albums - Create a new album
      * Requires authentication.
      * 
+     * This endpoint supports idempotency: if an album with the same title and artist
+     * already exists, the existing album is returned with 200 OK instead of creating a duplicate.
+     * 
      * Request body (JSON):
      * {
      *   "title": "Album Title",
@@ -93,7 +94,7 @@ class AlbumApiController extends AbstractController
      * }
      */
     #[Route('/albums', name: 'api_albums_create', methods: ['POST'])]
-    public function create(Request $request, EntityManagerInterface $em): JsonResponse
+    public function create(Request $request, AlbumRepository $repository, EntityManagerInterface $em): JsonResponse
     {
         // Check authentication
         if (!$this->getUser()) {
@@ -112,6 +113,31 @@ class AlbumApiController extends AbstractController
                 ['error' => 'Invalid JSON', 'detail' => json_last_error_msg()],
                 Response::HTTP_BAD_REQUEST
             );
+        }
+        
+        // Idempotency check: Check if album with same title and artist already exists
+        $title = $data['title'] ?? null;
+        $artist = $data['artist'] ?? null;
+        
+        if ($title && $artist) {
+            $existingAlbum = $repository->findOneBy(['title' => $title, 'artist' => $artist]);
+            if ($existingAlbum) {
+                $location = $this->generateUrl(
+                    'api_albums_show',
+                    ['id' => $existingAlbum->getId()],
+                    UrlGeneratorInterface::ABSOLUTE_URL
+                );
+                
+                return new JsonResponse(
+                    [
+                        'message' => 'Album already exists',
+                        'code' => 'ALBUM_EXISTS',
+                        'album' => $this->serializeAlbum($existingAlbum),
+                    ],
+                    Response::HTTP_OK,
+                    ['Location' => $location]
+                );
+            }
         }
         
         // Validate using form

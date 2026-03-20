@@ -11,12 +11,14 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Annotation\Route;
+use OpenApi\Attributes as OA;
 
 /**
  * API Authentication Controller.
  * Provides JWT-based authentication for API clients.
  */
 #[Route('/api/v1')]
+#[OA\Tag(name: 'Authentication', description: 'JWT authentication endpoints')]
 class AuthApiController extends AbstractController
 {
     public function __construct(
@@ -24,24 +26,36 @@ class AuthApiController extends AbstractController
     ) {
     }
 
-    /**
-     * POST /api/v1/auth/login - Authenticate and receive a JWT token
-     * 
-     * Request body (JSON):
-     * {
-     *   "email": "user@example.com",
-     *   "password": "yourpassword"
-     * }
-     * 
-     * Response:
-     * {
-     *   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-     *   "token_type": "Bearer",
-     *   "expires_in": 3600,
-     *   "user": { ... }
-     * }
-     */
     #[Route('/auth/login', name: 'api_auth_login', methods: ['POST'])]
+    #[OA\Post(
+        summary: 'Authenticate and receive a JWT token',
+        description: 'Login with email and password to receive a JWT token for API authentication.'
+    )]
+    #[OA\RequestBody(
+        required: true,
+        content: new OA\JsonContent(
+            required: ['email', 'password'],
+            properties: [
+                new OA\Property(property: 'email', type: 'string', format: 'email', example: 'user@example.com'),
+                new OA\Property(property: 'password', type: 'string', format: 'password', example: 'yourpassword')
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 200,
+        description: 'Login successful',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'token', type: 'string', example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'),
+                new OA\Property(property: 'token_type', type: 'string', example: 'Bearer'),
+                new OA\Property(property: 'expires_in', type: 'integer', example: 3600),
+                new OA\Property(property: 'expires_at', type: 'string', format: 'date-time'),
+                new OA\Property(property: 'user', type: 'object')
+            ]
+        )
+    )]
+    #[OA\Response(response: 400, description: 'Invalid JSON or missing credentials')]
+    #[OA\Response(response: 401, description: 'Invalid credentials')]
     public function login(
         Request $request,
         UserRepository $userRepository,
@@ -93,14 +107,28 @@ class AuthApiController extends AbstractController
         ], Response::HTTP_OK);
     }
 
-    /**
-     * GET /api/v1/auth/me - Get current authenticated user info
-     * Requires JWT Bearer token in Authorization header.
-     * 
-     * This endpoint now uses Symfony's security system via the API firewall,
-     * so $this->getUser() returns the authenticated user from the JWT.
-     */
     #[Route('/auth/me', name: 'api_auth_me', methods: ['GET'])]
+    #[OA\Get(
+        summary: 'Get current authenticated user',
+        description: 'Returns information about the currently authenticated user.',
+        security: [['Bearer' => []]]
+    )]
+    #[OA\Response(
+        response: 200,
+        description: 'User information',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'user', type: 'object', properties: [
+                    new OA\Property(property: 'id', type: 'integer'),
+                    new OA\Property(property: 'email', type: 'string'),
+                    new OA\Property(property: 'username', type: 'string'),
+                    new OA\Property(property: 'roles', type: 'array', items: new OA\Items(type: 'string')),
+                    new OA\Property(property: 'createdAt', type: 'string', format: 'date-time')
+                ])
+            ]
+        )
+    )]
+    #[OA\Response(response: 401, description: 'Authentication required')]
     public function me(): JsonResponse
     {
         /** @var User|null $user */
@@ -124,12 +152,25 @@ class AuthApiController extends AbstractController
         ], Response::HTTP_OK);
     }
 
-    /**
-     * POST /api/v1/auth/refresh - Refresh an existing JWT token
-     * Requires a valid (non-expired) JWT Bearer token.
-     * Returns a new token with extended expiration.
-     */
     #[Route('/auth/refresh', name: 'api_auth_refresh', methods: ['POST'])]
+    #[OA\Post(
+        summary: 'Refresh JWT token',
+        description: 'Get a new JWT token with extended expiration. Requires a valid current token.',
+        security: [['Bearer' => []]]
+    )]
+    #[OA\Response(
+        response: 200,
+        description: 'New token generated',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'token', type: 'string'),
+                new OA\Property(property: 'token_type', type: 'string', example: 'Bearer'),
+                new OA\Property(property: 'expires_in', type: 'integer', example: 3600),
+                new OA\Property(property: 'expires_at', type: 'string', format: 'date-time')
+            ]
+        )
+    )]
+    #[OA\Response(response: 401, description: 'Authentication required')]
     public function refresh(): JsonResponse
     {
         /** @var User|null $user */

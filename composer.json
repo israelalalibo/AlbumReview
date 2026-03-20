@@ -19,6 +19,8 @@
         "guzzlehttp/guzzle": "^7.10",
         "jms/serializer-bundle": "^5.5",
         "knplabs/knp-paginator-bundle": "^6.9",
+        "nelmio/api-doc-bundle": "^5.9",
+        "nelmio/cors-bundle": "^2.6",
         "stof/doctrine-extensions-bundle": "^1.14",
         "symfony/asset": "7.3.*",
         "symfony/console": "7.3.*",

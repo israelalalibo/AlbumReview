@@ -3,7 +3,9 @@
 namespace App\Controller;
 
 use App\Repository\AlbumRepository;
+use App\Service\AmazonProductService;
 use App\Service\DiscogsService;
+use App\Service\EbayService;
 use App\Service\MusicBrainzService;
 use App\Service\RecordStoreLocatorService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -18,7 +20,7 @@ use Symfony\Component\Routing\Annotation\Route;
 class MusicInfoController extends AbstractController
 {
     /**
-     * Display purchase options for an album.
+     * Display purchase options for an album from multiple marketplaces.
      */
     #[Route('/album/{slug}/buy', name: 'album_buy', methods: ['GET'])]
     public function buyAlbum(string $slug, AlbumRepository $albumRepository): Response
@@ -29,15 +31,35 @@ class MusicInfoController extends AbstractController
             throw $this->createNotFoundException('Album not found');
         }
         
+        // Fetch from Discogs
         $discogsService = new DiscogsService();
         $purchaseInfo = $discogsService->findAlbumWithPurchaseOptions(
             $album->getArtist(),
             $album->getTitle()
         );
+        //print_r(array_values($purchaseInfo)); //debugging
+        
+        // Fetch from eBay
+        $ebayService = new EbayService();
+        $ebayResults = $ebayService->searchVinyl(
+            $album->getArtist(),
+            $album->getTitle(),
+            5
+        );
+        
+        // Fetch from Amazon
+        $amazonService = new AmazonProductService();
+        $amazonResults = $amazonService->searchVinyl(
+            $album->getArtist(),
+            $album->getTitle(),
+            5
+        );
         
         return $this->render('music_info/buy.html.twig', [
             'album' => $album,
             'purchaseInfo' => $purchaseInfo,
+            'ebayResults' => $ebayResults,
+            'amazonResults' => $amazonResults,
         ]);
     }
 
