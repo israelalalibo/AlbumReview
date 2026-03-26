@@ -27,7 +27,7 @@ class ReviewApiController extends AbstractController
      * GET /api/v1/albums/{albumId}/reviews - List all reviews for an album
      */
     #[Route('/albums/{albumId}/reviews', name: 'api_reviews_list', requirements: ['albumId' => '\d+'], methods: ['GET'])]
-    public function list(int $albumId, AlbumRepository $albumRepository): JsonResponse
+    public function list(int $albumId, Request $request, AlbumRepository $albumRepository): JsonResponse
     {
         $album = $albumRepository->find($albumId);
 
@@ -43,21 +43,23 @@ class ReviewApiController extends AbstractController
             $album->getReviews()->toArray()
         );
 
-        return new JsonResponse([
+        $data = [
             'reviews' => $reviews,
             'meta' => [
                 'total' => count($reviews),
                 'albumId' => $albumId,
                 'albumTitle' => $album->getTitle(),
             ],
-        ], Response::HTTP_OK);
+        ];
+
+        return $this->createCachedJsonResponse($data, $request, Response::HTTP_OK, 60);
     }
 
     /**
      * GET /api/v1/albums/{albumId}/reviews/{id} - Get a single review
      */
     #[Route('/albums/{albumId}/reviews/{id}', name: 'api_reviews_show', requirements: ['albumId' => '\d+', 'id' => '\d+'], methods: ['GET'])]
-    public function show(int $albumId, int $id, AlbumRepository $albumRepository, ReviewRepository $reviewRepository): JsonResponse
+    public function show(int $albumId, int $id, Request $request, AlbumRepository $albumRepository, ReviewRepository $reviewRepository): JsonResponse
     {
         $album = $albumRepository->find($albumId);
 
@@ -77,10 +79,8 @@ class ReviewApiController extends AbstractController
             );
         }
 
-        return new JsonResponse(
-            $this->serializeReview($review, true),
-            Response::HTTP_OK
-        );
+        $data = $this->serializeReview($review, true);
+        return $this->createCachedJsonResponse($data, $request, Response::HTTP_OK, 120);
     }
 
     /**
@@ -364,5 +364,24 @@ class ReviewApiController extends AbstractController
             $errors[$field][] = $error->getMessage();
         }
         return $errors;
+    }
+
+    /**
+     * Build cache-aware JSON response for GET endpoints.
+     * Adds Cache-Control and ETag headers, and supports 304 Not Modified.
+     */
+    private function createCachedJsonResponse(array $data, Request $request, int $status = Response::HTTP_OK, int $maxAge = 60): JsonResponse
+    {
+        $response = new JsonResponse($data, $status);
+        $response->setPublic();
+        $response->setMaxAge($maxAge);
+        $response->setSharedMaxAge($maxAge);
+        $response->setEtag(hash('sha256', json_encode($data) ?: ''));
+
+        if ($response->isNotModified($request)) {
+            return $response;
+        }
+
+        return $response;
     }
 }

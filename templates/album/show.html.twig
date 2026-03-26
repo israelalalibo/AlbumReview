@@ -115,7 +115,7 @@
                             including official release date, record label, and track durations.
                         </p>
                     </div>
-                    <div id="mb-error" class="alert alert-warning mb-0" style="display: none;"></div>
+                    <div id="mb-error" class="alert alert-warning mb-0" data-persistent-alert="true" style="display: none;"></div>
                 </div>
             </div>
 
@@ -232,7 +232,6 @@
 
             fetchBtn.addEventListener('click', function() {
                 placeholderDiv.style.display = 'none';
-                errorDiv.style.display = 'none';
                 contentDiv.style.display = 'none';
                 loadingDiv.style.display = 'block';
                 fetchBtn.disabled = true;
@@ -257,6 +256,7 @@
                     .then(details => {
                         loadingDiv.style.display = 'none';
                         fetchBtn.disabled = false;
+                        errorDiv.style.display = 'none';
 
                         if (details.error) {
                             throw new Error(details.error);

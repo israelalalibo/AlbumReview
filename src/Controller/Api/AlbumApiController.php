@@ -53,14 +53,14 @@ class AlbumApiController extends AbstractController
             ],
         ];
         
-        return new JsonResponse($data, Response::HTTP_OK);
+        return $this->createCachedJsonResponse($data, $request, Response::HTTP_OK, 60);
     }
 
     /**
      * GET /api/v1/albums/{id} - Get a single album by ID
      */
     #[Route('/albums/{id}', name: 'api_albums_show', requirements: ['id' => '\d+'], methods: ['GET'])]
-    public function show(int $id, AlbumRepository $repository): JsonResponse
+    public function show(int $id, Request $request, AlbumRepository $repository): JsonResponse
     {
         $album = $repository->find($id);
         
@@ -71,10 +71,8 @@ class AlbumApiController extends AbstractController
             );
         }
         
-        return new JsonResponse(
-            $this->serializeAlbum($album, true),
-            Response::HTTP_OK
-        );
+        $data = $this->serializeAlbum($album, true);
+        return $this->createCachedJsonResponse($data, $request, Response::HTTP_OK, 120);
     }
 
     /**
@@ -331,5 +329,24 @@ class AlbumApiController extends AbstractController
             $errors[$field][] = $error->getMessage();
         }
         return $errors;
+    }
+
+    /**
+     * Build cache-aware JSON response for GET endpoints.
+     * Adds Cache-Control and ETag headers, and supports 304 Not Modified.
+     */
+    private function createCachedJsonResponse(array $data, Request $request, int $status = Response::HTTP_OK, int $maxAge = 60): JsonResponse
+    {
+        $response = new JsonResponse($data, $status);
+        $response->setPublic();
+        $response->setMaxAge($maxAge);
+        $response->setSharedMaxAge($maxAge);
+        $response->setEtag(hash('sha256', json_encode($data) ?: ''));
+
+        if ($response->isNotModified($request)) {
+            return $response;
+        }
+
+        return $response;
     }
 }

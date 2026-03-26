@@ -623,7 +623,7 @@
 <script>
     // Auto-hide alerts after 5 seconds
     document.addEventListener('DOMContentLoaded', function() {
-        const alerts = document.querySelectorAll('.alert');
+        const alerts = document.querySelectorAll('.alert:not([data-persistent-alert="true"])');
         alerts.forEach(function(alert) {
             setTimeout(function() {
                 const bsAlert = new bootstrap.Alert(alert);
