@@ -266,7 +266,7 @@ class AmazonProductService
         
         for ($i = 0; $i < 4; $i++) { //generate 4 fake item listings
             $condition = $conditions[$i % count($conditions)]; 
-            echo $condition . '<br>'; //debugging
+            //echo $condition . '<br>'; //debugging
             $isNew = $condition === 'New';
             $price = $isNew ? $basePrice + rand(5, 15) : $basePrice - rand(0, 10); 
             

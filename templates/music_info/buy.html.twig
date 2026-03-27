@@ -107,8 +107,8 @@
                 </div>
                 <div class="card-body">
                     {% if ebayResults.notice is defined %}
-                        <div class="alert alert-info small mb-3">
-                            <i class="bi bi-info-circle"></i> {{ ebayResults.notice }}
+                        <div class="alert-info small mb-3">
+                            <i class="bi bi-info-circle"></i> {{ ebayResults.notice }} {#display the notice to let users know that this is demo data#}
                         </div>
                     {% endif %}
                     
@@ -182,7 +182,7 @@
                 </div>
                 <div class="card-body">
                     {% if amazonResults.notice is defined %}
-                        <div class="alert alert-info small mb-3">
+                        <div class="alert-info small mb-3">
                             <i class="bi bi-info-circle"></i> {{ amazonResults.notice }}
                         </div>
                     {% endif %}

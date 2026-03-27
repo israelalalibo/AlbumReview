@@ -92,6 +92,28 @@ class AlbumApiController extends AbstractController
      * }
      */
     #[Route('/albums', name: 'api_albums_create', methods: ['POST'])]
+    #[OA\Post(
+        summary: 'Create a new album',
+        description: 'Create an album. Requires Bearer authentication.',
+        security: [['Bearer' => []]]
+    )]
+    #[OA\RequestBody(
+        required: true,
+        content: new OA\JsonContent(
+            required: ['title', 'artist', 'genre'],
+            properties: [
+                new OA\Property(property: 'title', type: 'string', example: 'Abbey Road'),
+                new OA\Property(property: 'artist', type: 'string', example: 'The Beatles'),
+                new OA\Property(property: 'genre', type: 'string', example: 'Rock'),
+                new OA\Property(property: 'releaseYear', type: 'integer', example: 1969),
+                new OA\Property(property: 'trackList', type: 'string', example: "Come Together\nSomething\nMaxwell's Silver Hammer")
+            ]
+        )
+    )]
+    #[OA\Response(response: 201, description: 'Album created')]
+    #[OA\Response(response: 200, description: 'Album already exists (idempotent result)')]
+    #[OA\Response(response: 400, description: 'Invalid JSON or validation failed')]
+    #[OA\Response(response: 401, description: 'Authentication required')]
     public function create(Request $request, AlbumRepository $repository, EntityManagerInterface $em): JsonResponse
     {
         // Check authentication
@@ -175,6 +197,28 @@ class AlbumApiController extends AbstractController
      * Requires authentication and ownership or admin role.
      */
     #[Route('/albums/{id}', name: 'api_albums_update', requirements: ['id' => '\d+'], methods: ['PUT'])]
+    #[OA\Put(
+        summary: 'Update an album',
+        description: 'Update an existing album by ID. Requires owner/admin authentication.',
+        security: [['Bearer' => []]]
+    )]
+    #[OA\RequestBody(
+        required: true,
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'title', type: 'string', example: 'Abbey Road (Remastered)'),
+                new OA\Property(property: 'artist', type: 'string', example: 'The Beatles'),
+                new OA\Property(property: 'genre', type: 'string', example: 'Rock'),
+                new OA\Property(property: 'releaseYear', type: 'integer', example: 1969),
+                new OA\Property(property: 'trackList', type: 'string', example: "Come Together\nSomething")
+            ]
+        )
+    )]
+    #[OA\Response(response: 200, description: 'Album updated')]
+    #[OA\Response(response: 400, description: 'Invalid JSON or validation failed')]
+    #[OA\Response(response: 401, description: 'Authentication required')]
+    #[OA\Response(response: 403, description: 'Forbidden')]
+    #[OA\Response(response: 404, description: 'Album not found')]
     public function update(int $id, Request $request, AlbumRepository $repository, EntityManagerInterface $em): JsonResponse
     {
         // Check authentication

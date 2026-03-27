@@ -101,6 +101,33 @@ class ReviewApiController extends AbstractController
      * }
      */
     #[Route('/albums/{albumId}/reviews', name: 'api_reviews_create', requirements: ['albumId' => '\d+'], methods: ['POST'])]
+    #[OA\Post(
+        summary: 'Create a review for an album',
+        description: 'Create a review for the given album ID. Requires Bearer authentication.',
+        security: [['Bearer' => []]]
+    )]
+    #[OA\Parameter(
+        name: 'albumId',
+        in: 'path',
+        required: true,
+        schema: new OA\Schema(type: 'integer')
+    )]
+    #[OA\RequestBody(
+        required: true,
+        content: new OA\JsonContent(
+            required: ['content', 'rating'],
+            properties: [
+                new OA\Property(property: 'title', type: 'string', example: 'Great Album'),
+                new OA\Property(property: 'content', type: 'string', example: 'Excellent production and songwriting.'),
+                new OA\Property(property: 'rating', type: 'integer', minimum: 1, maximum: 10, example: 9)
+            ]
+        )
+    )]
+    #[OA\Response(response: 201, description: 'Review created')]
+    #[OA\Response(response: 200, description: 'Review already exists (idempotent result)')]
+    #[OA\Response(response: 400, description: 'Invalid JSON or validation failed')]
+    #[OA\Response(response: 401, description: 'Authentication required')]
+    #[OA\Response(response: 404, description: 'Album not found')]
     public function create(
         int $albumId, 
         Request $request, 
@@ -195,6 +222,38 @@ class ReviewApiController extends AbstractController
      * Requires authentication and ownership or admin role.
      */
     #[Route('/albums/{albumId}/reviews/{id}', name: 'api_reviews_update', requirements: ['albumId' => '\d+', 'id' => '\d+'], methods: ['PUT'])]
+    #[OA\Put(
+        summary: 'Update a review',
+        description: 'Update an existing review for an album. Requires owner/admin authentication.',
+        security: [['Bearer' => []]]
+    )]
+    #[OA\Parameter(
+        name: 'albumId',
+        in: 'path',
+        required: true,
+        schema: new OA\Schema(type: 'integer')
+    )]
+    #[OA\Parameter(
+        name: 'id',
+        in: 'path',
+        required: true,
+        schema: new OA\Schema(type: 'integer')
+    )]
+    #[OA\RequestBody(
+        required: true,
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'title', type: 'string', example: 'Updated title'),
+                new OA\Property(property: 'content', type: 'string', example: 'Updated review content'),
+                new OA\Property(property: 'rating', type: 'integer', minimum: 1, maximum: 10, example: 8)
+            ]
+        )
+    )]
+    #[OA\Response(response: 200, description: 'Review updated')]
+    #[OA\Response(response: 400, description: 'Invalid JSON or validation failed')]
+    #[OA\Response(response: 401, description: 'Authentication required')]
+    #[OA\Response(response: 403, description: 'Forbidden')]
+    #[OA\Response(response: 404, description: 'Album/review not found')]
     public function update(int $albumId, int $id, Request $request, AlbumRepository $albumRepository, ReviewRepository $reviewRepository, EntityManagerInterface $em): JsonResponse
     {
         // Check authentication

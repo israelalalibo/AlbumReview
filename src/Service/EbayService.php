@@ -114,7 +114,7 @@ class EbayService
      */
     public function searchVinyl(string $artist, string $album, int $limit = 5): array
     {
-        $query = $artist . ' ' . $album . ' vinyl';
+        $query = $artist . ' ' . $album;
         
         // Try real API if credentials available
         if ($this->hasCredentials()) {
@@ -255,7 +255,7 @@ class EbayService
             'total' => count($items),
             'items' => $items,
             'searchUrl' => $searchUrl,
-            'notice' => 'Demo data shown. Configure EBAY_APP_ID and EBAY_CERT_ID for real listings.',
+            'notice' => 'Demo data shown. EBAY_APP_ID and EBAY_CERT_ID are not configured for real listings.',
         ];
     }
 

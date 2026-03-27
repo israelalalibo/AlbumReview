@@ -444,11 +444,6 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link {{ app.request.get('_route') starts with 'joindin_' ? 'active' : '' }}" href="{{ path('joindin_events') }}">
-                        <i class="bi bi-calendar-event"></i> JoindIn Events
-                    </a>
-                </li>
-                <li class="nav-item">
                     <a class="nav-link {{ app.request.get('_route') == 'record_stores' ? 'active' : '' }}" href="{{ path('record_stores') }}">
                         <i class="bi bi-geo-alt-fill"></i> Find Stores
                     </a>
