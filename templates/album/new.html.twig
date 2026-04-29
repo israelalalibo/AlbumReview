@@ -200,13 +200,13 @@
                 }
 
                 if (album.mbid && trackListField) {
-                    fetch('/album/details/' + album.mbid)
+                    fetch('/album/details/' + album.mbid) //Fetch the track details using the album's MusicBrainz ID
                         .then(response => response.json())
                         .then(details => {
                             if (details.trackList && details.trackList.length > 0) {
-                                const tracks = details.trackList.map(function(track, index) {
+                                const tracks = details.trackList.map(function(track, index) { 
                                     return (index + 1) + '. ' + track.title;
-                                }).join('\n');
+                                }).join('\n'); //Format the track list as a numbered list
                                 trackListField.value = tracks;
                             }
                         })

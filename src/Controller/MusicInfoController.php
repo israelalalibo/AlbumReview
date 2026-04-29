@@ -69,13 +69,13 @@ class MusicInfoController extends AbstractController
     #[Route('/stores', name: 'record_stores', methods: ['GET'])]
     public function recordStores(Request $request): Response
     {
-        $location = $request->query->get('location');
+        $location = $request->query->get('location'); // city name, postal code, or address
         $stores = null;
         $locationInfo = null;
         
         if ($location) {
             $service = new RecordStoreLocatorService();
-            $results = $service->findStoresByLocation($location, 15000);
+            $results = $service->findStoresByLocation($location, 15000); // Search within 15km radius
             
             if (!isset($results['error'])) {
                 $stores = $results['stores'];

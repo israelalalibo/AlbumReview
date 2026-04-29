@@ -133,9 +133,9 @@ class RecordStoreLocatorService
      * Find record stores by city/location name.
      * Combines geocoding with store search.
      */
-    public function findStoresByLocation(string $location, int $radius = 10000): array
+    public function findStoresByLocation(string $location, int $radius): array
     {
-        $coords = $this->geocodeAddress($location);
+        $coords = $this->geocodeAddress($location); // Get coordinates for the location
         
         if (!$coords) {
             return ['error' => 'Could not find location: ' . $location];
