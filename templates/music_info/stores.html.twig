@@ -40,7 +40,7 @@
 
     {% if location %}
         {% if locationInfo %}
-            <div class="alert alert-info">
+            <div class="alert-info">
                 <i class="bi bi-geo"></i> Showing record stores near: <strong>{{ locationInfo.displayName }}</strong>
             </div>
         {% endif %}
@@ -207,7 +207,7 @@
                     mapsUrl: "{{ store.mapsUrl }}"
                 }{% if not loop.last %},{% endif %}
                 {% endfor %}
-            ];
+            ]; // Pass store data to JavaScript
 
             stores.forEach(function(store) {
                 // Create popup content
@@ -232,7 +232,7 @@
 
                 const marker = L.marker([store.lat, store.lon], {icon: storeIcon})
                     .addTo(map)
-                    .bindPopup(popupContent);
+                    .bindPopup(popupContent); // Bind popup to marker
 
                 markers[store.id] = marker;
                 bounds.extend([store.lat, store.lon]);

@@ -86,10 +86,10 @@ class RecordStoreLocatorService
      * 
      * @param float $lat Latitude
      * @param float $lon Longitude
-     * @param int $radius Radius in meters (default 10km)
+     * @param int $radius Radius in meters to search within
      * @return array List of nearby stores
      */
-    public function findNearbyRecordStores(float $lat, float $lon, int $radius = 10000): array
+    public function findNearbyRecordStores(float $lat, float $lon, int $radius): array
     {
         try {
             // Overpass QL query to find music shops and record stores
@@ -112,17 +112,17 @@ class RecordStoreLocatorService
                 $radius, $lat, $lon,
                 $radius, $lat, $lon,
                 $radius, $lat, $lon
-            );
+            ); // Search for nodes and ways tagged as music shops, record stores, or hi-fi shops
 
             $response = $this->overpassClient->post('interpreter', [
                 'form_params' => [
                     'data' => $query,
                 ],
-            ]);
+            ]); //POST for larger queries to avoid URL length issues
 
-            $data = json_decode($response->getBody()->getContents(), true);
+            $data = json_decode($response->getBody()->getContents(), true); // Decode the JSON response
             
-            return $this->formatStoreResults($data['elements'] ?? [], $lat, $lon);
+            return $this->formatStoreResults($data['elements'] ?? [], $lat, $lon); // Format the results with distance calculation
             
         } catch (GuzzleException $e) {
             return ['error' => $e->getMessage()];
@@ -166,13 +166,13 @@ class RecordStoreLocatorService
             $tags = $element['tags'];
             
             // Calculate distance
-            $storeLat = $element['lat'] ?? 0;
+            $storeLat = $element['lat'] ?? 0; 
             $storeLon = $element['lon'] ?? 0;
             $distance = $this->calculateDistance($userLat, $userLon, $storeLat, $storeLon);
             
             $stores[] = [
                 'id' => $element['id'] ?? null,
-                'name' => $tags['name'] ?? 'Unknown Store',
+                'name' => $tags['name'] ?? 'Unknown Store', 
                 'type' => $tags['shop'] ?? 'music',
                 'address' => $this->formatAddress($tags),
                 'coordinates' => [
@@ -193,7 +193,7 @@ class RecordStoreLocatorService
                 'wheelchair' => $tags['wheelchair'] ?? null,
                 'osmUrl' => "https://www.openstreetmap.org/node/{$element['id']}",
                 'mapsUrl' => "https://www.google.com/maps?q={$storeLat},{$storeLon}",
-            ];
+            ]; //Only include the nodes
         }
         
         // Sort by distance
